@@ -20,31 +20,58 @@ app.use("/*", cors());
 
 app.get("/", (c) => c.json({ message: "Hello World" }));
 
-app.post("/answer", zValidator("form", questionSchema), async (c) => {
-  const { OPEN_AI_API_KEY } = env<EnvConfig>(c);
-  const openai = new OpenAI({
-    apiKey: OPEN_AI_API_KEY,
-  });
+const answerRoute = app.post(
+  "/answer",
+  zValidator("form", questionSchema),
+  async (c) => {
+    try {
+      const { OPEN_AI_API_KEY } = env<EnvConfig>(c);
+      const openai = new OpenAI({
+        apiKey: OPEN_AI_API_KEY,
+      });
 
-  const validPayload = c.req.valid("form");
+      // Performance -------------------------
+      const start = performance.now();
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a helpful forensics assistant. You are here to provide answers to on text and images you're given.",
-      },
-      {
-        role: "user",
-        content: validPayload.message,
-      },
-    ],
-  });
+      const validPayload = c.req.valid("form");
 
-  c.json({ completion });
-});
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: validPayload.message,
+            // content: [
+            //   {
+            //     type: "text",
+            //     content: validPayload.message,
+            //   },
+            //   {
+            //     type: "image_url",
+            //     image_url: {
+            //       url: validPayload.image,
+            //       detail: "low",
+            //     },
+            //   },
+            // ],
+          },
+        ],
+      });
+
+      // ----------------------
+      const end = performance.now();
+      return c.json({
+        data: completion,
+        time: end - start,
+      });
+    } catch (e) {
+      console.log(e);
+      return c.json({ message: "error" }, 500);
+    }
+  }
+);
 
 export const GET = handle(app);
+export const POST = handle(app);
+export type AppType = typeof answerRoute;
 export default app as never; // this is a hack to make the nextJs/typescript compiler happy.
