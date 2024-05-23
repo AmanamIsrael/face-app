@@ -2,6 +2,7 @@
 import { AppType } from "@/app/api/[[...route]]/route";
 import { systemPrompt } from "@/constants/message";
 import { hc } from "hono/client";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ImageResults } from "./ImageResults";
 import { ImageUpload } from "./ImageUpload";
@@ -20,6 +21,7 @@ export const AppWrapper = async () => {
       const data = response.json();
 
       console.error(data);
+      toast.error("An error occurred");
     }
 
     if (response.ok) {
